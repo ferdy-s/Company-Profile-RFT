@@ -53,7 +53,8 @@ USER nextjs
 EXPOSE 3000
 
 ENV PORT=3000
-# Do not set HOSTNAME=0.0.0.0 here — it can leak into OAuth redirect URLs. Next standalone still binds 0.0.0.0 by default.
+# Listen address: set HOSTNAME=0.0.0.0 in docker-compose (Docker default HOSTNAME=container-id
+# makes Next bind to loopback only). OAuth tetap memakai AUTH_URL / NEXTAUTH_URL di .env.
 
 CMD ["node", "server.js"]
 

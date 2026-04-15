@@ -30,6 +30,9 @@ services:
     ports:
       - "8091:3000"
     environment:
+      # Wajib: Docker mengisi HOSTNAME=container-id; Next standalone memakai itu untuk listen()
+      # sehingga port 3000 hanya terbuka di loopback → NPM/global-net dapat connection refused.
+      - HOSTNAME=0.0.0.0
       - NODE_ENV=${NODE_ENV}
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_URL=${AUTH_URL}
