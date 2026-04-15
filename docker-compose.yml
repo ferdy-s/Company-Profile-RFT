@@ -18,6 +18,11 @@
 # - native_rft_network: semua service (komunikasi internal).
 # - global-net: reverse proxy / app lain yang perlu upstream ke web, Keycloak, MinIO, Dragonfly.
 #   Postgres tetap hanya native_rft_network.
+#
+# Skema DB pertama kali / setelah ubah schema Prisma (dari folder project di server):
+#   docker compose --profile tools run --rm prisma-setup
+# Lalu isi data (opsional):
+#   docker compose --profile tools run --rm prisma-setup sh -c "npm ci && npm run db:seed && npm run db:seed:marketing"
 
 services:
   nextjs:
@@ -156,6 +161,25 @@ services:
       timeout: 10s
       retries: 5
       start_period: 90s
+
+  # Sekali pakai: sinkronkan tabel Prisma ke Postgres (image Next produksi tidak berisi Prisma CLI).
+  prisma-setup:
+    image: node:20-bookworm-slim
+    profiles:
+      - tools
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: development
+    networks:
+      - native_rft_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "npm ci && npx prisma generate && npx prisma db push"
 
 networks:
   native_rft_network:

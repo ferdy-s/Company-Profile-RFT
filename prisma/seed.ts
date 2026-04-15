@@ -2,8 +2,13 @@ import { config } from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { seedMarketingContent } from './seed-marketing-content';
 
+// Sudah diset oleh Docker / shell (deploy) — jangan timpa dengan .env.local (localhost).
+const databaseUrlFromEnv = process.env.DATABASE_URL;
 config();
 config({ path: '.env.local', override: true });
+if (databaseUrlFromEnv) {
+  process.env.DATABASE_URL = databaseUrlFromEnv;
+}
 
 const prisma = new PrismaClient();
 
