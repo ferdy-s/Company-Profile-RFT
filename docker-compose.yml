@@ -1,6 +1,15 @@
 # Production-style stack (nama container & jaringan mengikuti pola server, contoh: native_tapp_*).
 # Pastikan jaringan global sudah ada di host: docker network create global-net
 #
+# Publish port ke host (lanjut setelah 8090 = native_jkt_pos_pma di srv673856):
+#   8091 → Next.js (3000) | native_rft_web
+#   8092 → Dragonfly (6379)  | native_rft_cache
+#   8093 → MinIO S3 (9000)    | native_rft_minio
+#   8094 → MinIO Console (9001)
+#   8095 → Keycloak (8080)
+# Postgres tidak di-publish (hanya jaringan internal).
+# Nginx Proxy Manager: upstream ke IP host + port di atas (atau hostname Docker di global-net).
+#
 # Domain (HTTPS di reverse proxy → container):
 #   rftdigitalsolution.com | s3.* | s3-ui.* | keycloack.* | dragonfly.*
 # Lihat .env untuk KEYCLOAK_PUBLIC_HOST, MINIO_SERVER_URL, MINIO_BROWSER_REDIRECT_URL.
@@ -19,7 +28,7 @@ services:
     container_name: native_rft_web
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "8091:3000"
     environment:
       - NODE_ENV=${NODE_ENV}
       - AUTH_SECRET=${AUTH_SECRET}
@@ -57,7 +66,7 @@ services:
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
-      - "6379:6379"
+      - "8092:6379"
     volumes:
       - ./dragonfly_data:/data
     ulimits:
@@ -92,8 +101,8 @@ services:
     container_name: native_rft_minio
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "8093:9000"
+      - "8094:9001"
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
@@ -117,7 +126,7 @@ services:
     container_name: native_rft_keycloak
     command: start
     ports:
-      - "8080:8080"
+      - "8095:8080"
     environment:
       - KC_DB=postgres
       - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
