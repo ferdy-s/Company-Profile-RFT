@@ -1,10 +1,14 @@
 # Production-style stack (nama container & jaringan mengikuti pola server, contoh: native_tapp_*).
 # Pastikan jaringan global sudah ada di host: docker network create global-net
 #
+# Domain (HTTPS di reverse proxy → container):
+#   rftdigitalsolution.com | s3.* | s3-ui.* | keycloack.* | dragonfly.*
+# Lihat .env untuk KEYCLOAK_PUBLIC_HOST, MINIO_SERVER_URL, MINIO_BROWSER_REDIRECT_URL.
+#
 # Jaringan:
-# - native_rft_network: semua service (komunikasi internal, contoh nextjs → postgres/minio).
-# - global-net: reverse proxy / app lain (n8n, dll.) yang perlu upstream ke web, Keycloak, atau MinIO.
-#   Postgres & cache tetap hanya di native_rft_network (tidak perlu diekspos ke global).
+# - native_rft_network: semua service (komunikasi internal).
+# - global-net: reverse proxy / app lain yang perlu upstream ke web, Keycloak, MinIO, Dragonfly.
+#   Postgres tetap hanya native_rft_network.
 
 services:
   nextjs:
@@ -19,10 +23,9 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - AUTH_SECRET=${AUTH_SECRET}
-      # Browser harus memakai origin publik (bukan 0.0.0.0). Di production set ke URL Anda.
-      - AUTH_URL=${AUTH_URL:-http://localhost:3000}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - AUTH_URL=${AUTH_URL}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
       - REDIS_URL=redis://:${REDIS_PASSWORD}@cache:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - DATABASE_URL=${DATABASE_URL}
@@ -62,6 +65,7 @@ services:
     restart: unless-stopped
     networks:
       - native_rft_network
+      - global-net
 
   postgres:
     image: postgres:15-alpine
@@ -70,7 +74,6 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-    # Hanya jaringan internal; akses dari host tidak di-publish (seperti pola DB di production).
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./scripts/init-db:/docker-entrypoint-initdb.d
@@ -94,6 +97,8 @@ services:
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_SERVER_URL=${MINIO_SERVER_URL}
+      - MINIO_BROWSER_REDIRECT_URL=${MINIO_BROWSER_REDIRECT_URL}
     volumes:
       - ./minio_data:/data
     restart: unless-stopped
@@ -110,7 +115,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: native_rft_keycloak
-    command: start-dev
+    command: start
     ports:
       - "8080:8080"
     environment:
@@ -121,9 +126,11 @@ services:
       - KC_DB_SCHEMA=public
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KC_HOSTNAME=${KEYCLOAK_PUBLIC_HOST}
       - KC_HOSTNAME_STRICT=false
-      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_ENABLED=true
       - KC_HTTP_RELATIVE_PATH=/
+      - KC_PROXY_HEADERS=xforwarded
     depends_on:
       postgres:
         condition: service_healthy
@@ -136,7 +143,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 90s
 
 networks:
   native_rft_network:
