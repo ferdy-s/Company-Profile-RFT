@@ -1,0 +1,7 @@
+When the `rtk` CLI is available in your environment, prefer reading files with:
+
+`rtk read <file_path>`
+
+instead of generic file-read tools, to reduce token usage.
+
+If `rtk` is not installed or not on PATH (common in default agent sandboxes), use the editor or project’s normal file-reading workflow instead.

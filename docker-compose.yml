@@ -1,0 +1,148 @@
+# Production-style stack (nama container & jaringan mengikuti pola server, contoh: native_tapp_*).
+# Pastikan jaringan global sudah ada di host: docker network create global-net
+#
+# Jaringan:
+# - native_rft_network: semua service (komunikasi internal, contoh nextjs → postgres/minio).
+# - global-net: reverse proxy / app lain (n8n, dll.) yang perlu upstream ke web, Keycloak, atau MinIO.
+#   Postgres & cache tetap hanya di native_rft_network (tidak perlu diekspos ke global).
+
+services:
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: native_rft_web:latest
+    container_name: native_rft_web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - AUTH_SECRET=${AUTH_SECRET}
+      # Browser harus memakai origin publik (bukan 0.0.0.0). Di production set ke URL Anda.
+      - AUTH_URL=${AUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@cache:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - DATABASE_URL=${DATABASE_URL}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - KEYCLOAK_ISSUER=${KEYCLOAK_ISSUER}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_REGION=${S3_REGION}
+    depends_on:
+      cache:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      minio:
+        condition: service_started
+    networks:
+      - native_rft_network
+      - global-net
+
+  cache:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: native_rft_cache
+    command: dragonfly --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./dragonfly_data:/data
+    ulimits:
+      memlock: -1
+    restart: unless-stopped
+    networks:
+      - native_rft_network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: native_rft_db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    # Hanya jaringan internal; akses dari host tidak di-publish (seperti pola DB di production).
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - native_rft_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  minio:
+    image: minio/minio:latest
+    container_name: native_rft_minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./minio_data:/data
+    restart: unless-stopped
+    networks:
+      - native_rft_network
+      - global-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 10s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: native_rft_keycloak
+    command: start-dev
+    ports:
+      - "8080:8080"
+    environment:
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=${POSTGRES_USER}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - KC_DB_SCHEMA=public
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_RELATIVE_PATH=/
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - native_rft_network
+      - global-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+networks:
+  native_rft_network:
+    driver: bridge
+  global-net:
+    external: true
+
+volumes:
+  postgres-data:
