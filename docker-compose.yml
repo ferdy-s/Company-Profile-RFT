@@ -66,6 +66,10 @@ services:
         condition: service_started
       minio:
         condition: service_started
+    # Auth.js mem-fetch OIDC dari URL publik KEYCLOAK_ISSUER. Tanpa extra_hosts, dari dalam container sering
+    # hairpin/NAT gagal → Configuration; panggilan token ke Keycloak bisa hang → 502 di reverse proxy.
+    extra_hosts:
+      - "${KEYCLOAK_PUBLIC_HOST}:host-gateway"
     networks:
       - native_rft_network
       - global-net

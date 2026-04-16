@@ -137,6 +137,18 @@ Harus **200**. Kalau bukan 200, perbaiki proxy / DNS / TLS dulu — tanpa ini lo
 
 ## Troubleshooting
 
+- **Halaman login: "Keycloak belum terhubung" (`error=Configuration`)**  
+  Bisa jadi sisa query lama di URL (`/login?error=Configuration`). Buka **`https://rftdigitalsolution.com/login`** tanpa parameter, lalu coba login lagi. Jika masih muncul setelah klik Keycloak, cek `docker logs native_rft_web` dan pastikan dari dalam container fetch ke Keycloak **200**:  
+  `docker exec native_rft_web node -e "fetch(process.env.KEYCLOAK_ISSUER+'/.well-known/openid-configuration').then(r=>console.log(r.status)).catch(e=>console.error(e))"`  
+  Di `docker-compose.yml`, service **nextjs** memakai **`extra_hosts`** (`KEYCLOAK_PUBLIC_HOST:host-gateway`) agar hostname Keycloak publik bisa dijangkau dari container; setelah deploy compose terbaru: `docker compose up -d --force-recreate nextjs`.
+
+- **502 Bad Gateway pada `https://…/api/auth/callback/keycloak`**  
+  Biasanya **Nginx Proxy Manager** tidak mendapat respons dari upstream Next.js (bukan error Keycloak di browser). Cek:  
+  1) **Proxy Host** `rftdigitalsolution.com` → Forward **HTTP** ke IP host + port publish Next (`8091`), bukan ke container IP sembarangan.  
+  2) Saat 502, langsung `docker logs -f native_rft_web` — ada crash / stack trace / fetch Keycloak hang.  
+  3) Di NPM **Advanced** / custom config, naikkan timeout jika perlu: `proxy_read_timeout 120s; proxy_connect_timeout 120s;`  
+  4) Pastikan `extra_hosts` Keycloak untuk service `nextjs` sudah aktif (lihat poin di atas) supaya callback tidak menggantung saat hubungi token endpoint.
+
 - **Log Next.js: `"response" is not a conform Authorization Server Metadata response (unexpected HTTP status code)`**  
   Proses login mem-fetch `.../.well-known/openid-configuration` dan mendapat HTTP bukan 200 (atau bukan JSON metadata). Dari **dalam container** `native_rft_web`, cek:  `curl -sS -o /dev/null -w "%{http_code}\n" "https://keycloak.rftdigitalsolution.com/realms/rft/.well-known/openid-configuration"`  
   Jika bukan 200, set **`KEYCLOAK_WELL_KNOWN`** ke URL internal (lihat bagian production di atas), lalu `docker compose up -d --force-recreate nextjs`. Pastikan **`KC_HOSTNAME`** Keycloak = hostname publik (`keycloak.rftdigitalsolution.com`) agar field `issuer` di metadata sama dengan `KEYCLOAK_ISSUER`.

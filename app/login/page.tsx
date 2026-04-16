@@ -13,7 +13,7 @@ const errorMessages: Record<string, { title: string; description: string; hint?:
     title: 'Keycloak belum terhubung',
     description:
       'Sepertinya Keycloak belum di-setup atau realm/client belum dikonfigurasi. Pastikan Keycloak sudah running dan variabel KEYCLOAK_ISSUER, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET di .env sudah benar.',
-    hint: 'Cek SETUP_KEYCLOAK.md untuk panduan lengkap.',
+    hint: 'Cek SETUP_KEYCLOAK.md. Jika baru memperbaiki Keycloak/NPM, buka /login tanpa ?error=… di URL. Di Docker production, pastikan compose memetakan KEYCLOAK_PUBLIC_HOST ke host-gateway (lihat docker-compose).',
   },
   OAuthCallback: {
     title: 'Gagal login via Keycloak',
