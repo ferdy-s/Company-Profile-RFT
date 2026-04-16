@@ -152,7 +152,10 @@ services:
       - KC_DB_SCHEMA=public
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      # Wajib di belakang TLS terminator (NPM/Cloudflare): issuer & endpoint di .well-known harus https://host publik.
+      # Tanpa URL penuh, request internal http://keycloak:8080 bisa menghasilkan issuer http://… → Auth.js error Configuration.
       - KC_HOSTNAME=${KEYCLOAK_PUBLIC_HOST}
+      - KC_HOSTNAME_URL=https://${KEYCLOAK_PUBLIC_HOST}
       - KC_HOSTNAME_STRICT=false
       - KC_HTTP_ENABLED=true
       - KC_HTTP_RELATIVE_PATH=/

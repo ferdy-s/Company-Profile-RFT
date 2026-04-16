@@ -137,8 +137,12 @@ Harus **200**. Kalau bukan 200, perbaiki proxy / DNS / TLS dulu — tanpa ini lo
 
 ## Troubleshooting
 
+- **Tes `grant_type=client_credentials` mengembalikan `unauthorized_client` / "Client not enabled to retrieve service account"**  
+  Itu **normal** untuk client web (`rft-web`) kecuali Anda mengaktifkan **Service accounts roles** di client Keycloak. Alur login browser memakai **authorization code** + PKCE, bukan client credentials. Untuk cek koneksi token endpoint, setelah **`KC_HOSTNAME_URL`** benar, cukup pastikan discovery:  `docker exec native_rft_web node -e "fetch(process.env.KEYCLOAK_ISSUER+'/.well-known/openid-configuration').then(r=>r.json()).then(j=>console.log('issuer=',j.issuer)).catch(console.error)"`  
+  Nilai **`issuer`** harus **tepat sama** dengan `KEYCLOAK_ISSUER` di `.env` (biasanya `https://keycloak.…/realms/rft`).
+
 - **Halaman login: "Keycloak belum terhubung" (`error=Configuration`)**  
-  Bisa jadi sisa query lama di URL (`/login?error=Configuration`). Buka **`https://rftdigitalsolution.com/login`** tanpa parameter, lalu coba login lagi. Jika masih muncul setelah klik Keycloak, cek `docker logs native_rft_web` dan pastikan dari dalam container fetch ke Keycloak **200**:  
+  Bisa jadi sisa query lama di URL (`/login?error=Configuration`). Buka **`https://rftdigitalsolution.com/login`** tanpa parameter, lalu coba login lagi. Penyebab umum lain: **`issuer` di metadata OIDC tidak sama** dengan `KEYCLOAK_ISSUER` (sering tanpa `KC_HOSTNAME_URL` di Keycloak) — lihat poin tes `issuer=` di atas; setelah ubah compose Keycloak, **`docker compose up -d --force-recreate keycloak`**. Jika masih muncul setelah klik Keycloak, cek `docker logs native_rft_web` dan pastikan dari dalam container fetch ke Keycloak **200**:  
   `docker exec native_rft_web node -e "fetch(process.env.KEYCLOAK_ISSUER+'/.well-known/openid-configuration').then(r=>console.log(r.status)).catch(e=>console.error(e))"`  
   Di `docker-compose.yml`, service **nextjs** memakai **`extra_hosts`** (`KEYCLOAK_PUBLIC_HOST:host-gateway`) agar hostname Keycloak publik bisa dijangkau dari container; setelah deploy compose terbaru: `docker compose up -d --force-recreate nextjs`.
 
