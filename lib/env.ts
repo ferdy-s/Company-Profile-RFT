@@ -145,6 +145,19 @@ function normalizeAuthBaseUrlForOAuth(): void {
     return;
   }
 
+  // Docker / standalone: HOSTNAME=0.0.0.0. Jangan default ke localhost untuk OAuth —
+  // Keycloak akan "Code not valid" jika redirect_uri token exchange ≠ redirect saat authorize.
+  const publicApp = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "");
+  if (
+    process.env.HOSTNAME === "0.0.0.0" &&
+    publicApp &&
+    publicApp.startsWith("https://")
+  ) {
+    process.env.AUTH_URL = publicApp;
+    process.env.NEXTAUTH_URL = publicApp;
+    return;
+  }
+
   if (process.env.HOSTNAME === "0.0.0.0") {
     process.env.AUTH_URL = `http://localhost:${port}`;
     process.env.NEXTAUTH_URL = process.env.AUTH_URL;

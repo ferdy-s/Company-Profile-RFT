@@ -143,6 +143,13 @@ Harus **200**. Kalau bukan 200, perbaiki proxy / DNS / TLS dulu — tanpa ini lo
 
 - **Keycloak won't start**: Check PostgreSQL is healthy and Keycloak database exists
 - **Keycloak: `Invalid parameter: redirect_uri`**: URL callback app tidak ada di client Keycloak. Di **Clients** → **`rft-web`** → **Valid redirect URIs**, tambahkan persis: `https://rftdigitalsolution.com/api/auth/callback/keycloak` (tanpa slash ekstra di akhir, kecuali Anda memang pakai trailing slash di `AUTH_URL`). **Web origins**: `https://rftdigitalsolution.com`. Jika sebelumnya hanya jalan seed default localhost, jalankan ulang seed dengan URL produksi, mis.: `APP_URL=https://rftdigitalsolution.com` (atau `AUTH_URL` / `NEXT_PUBLIC_APP_URL` yang sama dengan site Anda).
+- **Log: `invalid_grant` / `Code not valid` (saat `/api/auth/callback/keycloak`)**  
+  Bukan lagi masalah redirect URI di layar Keycloak (authorize sudah sukses). Biasanya salah satu dari:  
+  1) **`AUTH_URL` / `NEXTAUTH_URL` tidak sama dengan URL publik** yang dipakai browser (`https://rftdigitalsolution.com` tanpa slash akhir). Set eksplisit di `.env`, lalu `docker compose up -d --force-recreate nextjs`.  
+  2) **`KEYCLOAK_CLIENT_SECRET` di container tidak sama** dengan tab **Credentials** client `rft-web` (spasi/quote di `.env`, atau secret di-regenerate tapi `.env` belum di-update). Cek: `docker exec native_rft_web printenv KEYCLOAK_CLIENT_SECRET` (bandingkan panjang/karakter pertama dengan Keycloak).  
+  3) **Kode authorization dipakai dua kali** (refresh ganda, bookmark URL callback): coba login lagi dari `/login` dengan jendela bersih / incognito.  
+  4) **Cookie PKCE** tidak ikut (jarang): pastikan site dibuka lewat HTTPS yang sama, tidak blok cookie pihak ketiga untuk domain Anda.
+
 - **Login redirects fail**: Verify redirect URIs in Keycloak client settings
 - **Roles not working**: Check user role assignments in Keycloak
 

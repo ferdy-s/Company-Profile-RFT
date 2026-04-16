@@ -40,6 +40,7 @@ services:
       - HOSTNAME=0.0.0.0
       - NODE_ENV=${NODE_ENV}
       - AUTH_SECRET=${AUTH_SECRET}
+      # Harus sama dengan URL publik browser (OAuth redirect_uri). Kosong + HOSTNAME=0.0.0.0 bisa memicu invalid_grant "Code not valid" di Keycloak.
       - AUTH_URL=${AUTH_URL}
       - NEXTAUTH_URL=${NEXTAUTH_URL}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
