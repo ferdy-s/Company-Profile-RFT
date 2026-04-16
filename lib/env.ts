@@ -42,6 +42,17 @@ const envSchema = z
           .optional()
           .default("http://localhost:8080/realms/dummy")
       : z.string().url("KEYCLOAK_ISSUER must be a valid URL"),
+    /**
+     * URL discovery OIDC (Authorization Server Metadata). Opsional.
+     * Di Docker, set ke URL internal Keycloak agar server Next.js tidak fetch lewat hostname publik
+     * (sering gagal: hairpin NAT / proxy → "unexpected HTTP status code" saat login).
+     * `issuer` tetap URL publik; isi metadata dari Keycloak harus sama dengan KEYCLOAK_ISSUER (KC_HOSTNAME).
+     */
+    KEYCLOAK_WELL_KNOWN: z.preprocess((v) => {
+      if (v == null || v === "") return undefined;
+      if (typeof v === "string" && v.trim() === "") return undefined;
+      return typeof v === "string" ? v.trim() : v;
+    }, z.string().url().optional()),
 
     // Redis/DragonflyDB Configuration
     REDIS_URL: z.string().url().optional(),
@@ -104,6 +115,11 @@ const envSchema = z
 
 type Env = z.infer<typeof envSchema>;
 
+function normalizeKeycloakIssuer(url: string | undefined): string | undefined {
+  if (url == null) return url;
+  return url.trim().replace(/\/+$/, "");
+}
+
 /**
  * Auth.js builds redirect URLs from AUTH_URL / NEXTAUTH_URL, else from the Host header.
  * Dockerfiles sometimes set HOSTNAME=0.0.0.0; browsers cannot open http://0.0.0.0 — fix defaults.
@@ -145,7 +161,8 @@ function getEnv(): Env {
       AUTH_URL: process.env.AUTH_URL,
       KEYCLOAK_CLIENT_ID: process.env.KEYCLOAK_CLIENT_ID,
       KEYCLOAK_CLIENT_SECRET: process.env.KEYCLOAK_CLIENT_SECRET,
-      KEYCLOAK_ISSUER: process.env.KEYCLOAK_ISSUER,
+      KEYCLOAK_ISSUER: normalizeKeycloakIssuer(process.env.KEYCLOAK_ISSUER),
+      KEYCLOAK_WELL_KNOWN: process.env.KEYCLOAK_WELL_KNOWN,
       S3_ENDPOINT: process.env.S3_ENDPOINT,
       S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
       S3_SECRET_KEY: process.env.S3_SECRET_KEY,

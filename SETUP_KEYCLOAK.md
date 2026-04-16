@@ -109,6 +109,7 @@ Di **`.env` production** (sudah disetel di repo):
 - `KEYCLOAK_ISSUER=https://keycloak.rftdigitalsolution.com/realms/rft`
 - `KEYCLOAK_CLIENT_ID=rft-web` (harus sama persis di Keycloak)
 - `KEYCLOAK_CLIENT_SECRET=…` (dari tab **Credentials** client di Keycloak)
+- **`KEYCLOAK_WELL_KNOWN`** (disarankan di Docker): URL discovery **internal** ke container Keycloak, mis. `http://keycloak:8080/realms/rft/.well-known/openid-configuration`. Di `docker-compose.yml` service `nextjs` sudah ada default ini; ubah path `/realms/...` jika nama realm bukan `rft`. Tanpa ini, Next.js di container sering memanggil URL publik Keycloak dan mendapat status non-200 → error Auth.js *Authorization Server Metadata* / login `Configuration`.
 
 ### Langkah ringkas di Keycloak Admin
 
@@ -135,6 +136,10 @@ curl -sS -o /dev/null -w "%{http_code}\n" "https://keycloak.rftdigitalsolution.c
 Harus **200**. Kalau bukan 200, perbaiki proxy / DNS / TLS dulu — tanpa ini login akan `Configuration`.
 
 ## Troubleshooting
+
+- **Log Next.js: `"response" is not a conform Authorization Server Metadata response (unexpected HTTP status code)`**  
+  Proses login mem-fetch `.../.well-known/openid-configuration` dan mendapat HTTP bukan 200 (atau bukan JSON metadata). Dari **dalam container** `native_rft_web`, cek:  `curl -sS -o /dev/null -w "%{http_code}\n" "https://keycloak.rftdigitalsolution.com/realms/rft/.well-known/openid-configuration"`  
+  Jika bukan 200, set **`KEYCLOAK_WELL_KNOWN`** ke URL internal (lihat bagian production di atas), lalu `docker compose up -d --force-recreate nextjs`. Pastikan **`KC_HOSTNAME`** Keycloak = hostname publik (`keycloak.rftdigitalsolution.com`) agar field `issuer` di metadata sama dengan `KEYCLOAK_ISSUER`.
 
 - **Keycloak won't start**: Check PostgreSQL is healthy and Keycloak database exists
 - **Login redirects fail**: Verify redirect URIs in Keycloak client settings
