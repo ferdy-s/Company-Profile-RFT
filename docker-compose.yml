@@ -11,7 +11,7 @@
 # Nginx Proxy Manager: upstream ke IP host + port di atas (atau hostname Docker di global-net).
 #
 # Domain (HTTPS di reverse proxy → container):
-#   rftdigitalsolution.com | s3.* | s3-ui.* | keycloack.* | dragonfly.*
+#   rftdigitalsolution.com | s3.* | s3-ui.* | keycloak.* | dragonfly.*
 # Lihat .env untuk KEYCLOAK_PUBLIC_HOST, MINIO_SERVER_URL, MINIO_BROWSER_REDIRECT_URL.
 #
 # Jaringan:

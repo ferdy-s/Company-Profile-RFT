@@ -98,6 +98,42 @@ KEYCLOAK_ISSUER=http://localhost:8080/realms/rft
 
 For production, update the issuer URL to your production Keycloak instance.
 
+## Production (rftdigitalsolution.com + Keycloak di subdomain)
+
+Pastikan **Nginx Proxy Manager** sudah mem-proxy:
+
+- `https://keycloak.rftdigitalsolution.com` → container Keycloak (mis. `native_rft_keycloak:8080` di `global-net`, atau host `8095`).
+
+Di **`.env` production** (sudah disetel di repo):
+
+- `KEYCLOAK_ISSUER=https://keycloak.rftdigitalsolution.com/realms/rft`
+- `KEYCLOAK_CLIENT_ID=rft-web` (harus sama persis di Keycloak)
+- `KEYCLOAK_CLIENT_SECRET=…` (dari tab **Credentials** client di Keycloak)
+
+### Langkah ringkas di Keycloak Admin
+
+1. Buka konsol admin: `https://keycloak.rftdigitalsolution.com/admin` (login pakai `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD`).
+2. **Realm** `rft`: buat jika belum ada (nama harus sama dengan path di `KEYCLOAK_ISSUER`: `/realms/rft`).
+3. **Clients** → client **OpenID Connect** dengan Client ID **`rft-web`**:
+   - **Client authentication**: ON (confidential).
+   - **Valid redirect URIs** (wajib):
+     - `https://rftdigitalsolution.com/api/auth/callback/keycloak`
+     - `https://rftdigitalsolution.com/*` (opsional tapi praktis)
+   - **Web origins**: `https://rftdigitalsolution.com`
+   - Simpan, lalu di tab **Credentials** salin **Client secret** → isi `KEYCLOAK_CLIENT_SECRET` di `.env` → `docker compose up -d --force-recreate nextjs`.
+4. **Realm roles**: buat role `admin` (dan lainnya jika perlu).
+5. **Users**: buat user admin → **Role mapping** → assign role **`admin`** (kode app menganggap admin dari role ini).
+
+### Cek cepat dari server (Next bisa reach Keycloak)
+
+Dari host atau container Next:
+
+```bash
+curl -sS -o /dev/null -w "%{http_code}\n" "https://keycloak.rftdigitalsolution.com/realms/rft/.well-known/openid-configuration"
+```
+
+Harus **200**. Kalau bukan 200, perbaiki proxy / DNS / TLS dulu — tanpa ini login akan `Configuration`.
+
 ## Troubleshooting
 
 - **Keycloak won't start**: Check PostgreSQL is healthy and Keycloak database exists
