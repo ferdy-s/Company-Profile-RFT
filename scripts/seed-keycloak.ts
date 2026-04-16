@@ -6,10 +6,18 @@
  * Usage:
  *   npx tsx scripts/seed-keycloak.ts
  *
+ * Production (redirect / web origins mengikuti URL app):
+ *   APP_URL=https://rftdigitalsolution.com npx tsx scripts/seed-keycloak.ts
+ *   # atau: AUTH_URL / NEXT_PUBLIC_APP_URL (urutan prioritas: APP_URL → AUTH_URL → NEXT_PUBLIC_APP_URL)
+ *
  * Prerequisites:
  *   - Keycloak harus running di http://localhost:8080
  *   - Docker dev services: docker-compose -f docker-compose.dev.yml up -d
  */
+
+function normalizeAppBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, '');
+}
 
 const KEYCLOAK_BASE = process.env.KEYCLOAK_BASE_URL || 'http://localhost:8080';
 const ADMIN_USER = process.env.KEYCLOAK_ADMIN || 'admin';
@@ -17,7 +25,12 @@ const ADMIN_PASS = process.env.KEYCLOAK_ADMIN_PASSWORD || 'K3y_Adm1n_Rul3z!2026'
 
 const REALM_NAME = 'rft';
 const CLIENT_ID = 'rft-web';
-const APP_URL = 'http://localhost:3000';
+const APP_URL = normalizeAppBaseUrl(
+  process.env.APP_URL ||
+    process.env.AUTH_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    'http://localhost:3000'
+);
 
 // User yang akan dibuat
 const SEED_USERS = [

@@ -142,6 +142,7 @@ Harus **200**. Kalau bukan 200, perbaiki proxy / DNS / TLS dulu — tanpa ini lo
   Jika bukan 200, set **`KEYCLOAK_WELL_KNOWN`** ke URL internal (lihat bagian production di atas), lalu `docker compose up -d --force-recreate nextjs`. Pastikan **`KC_HOSTNAME`** Keycloak = hostname publik (`keycloak.rftdigitalsolution.com`) agar field `issuer` di metadata sama dengan `KEYCLOAK_ISSUER`.
 
 - **Keycloak won't start**: Check PostgreSQL is healthy and Keycloak database exists
+- **Keycloak: `Invalid parameter: redirect_uri`**: URL callback app tidak ada di client Keycloak. Di **Clients** → **`rft-web`** → **Valid redirect URIs**, tambahkan persis: `https://rftdigitalsolution.com/api/auth/callback/keycloak` (tanpa slash ekstra di akhir, kecuali Anda memang pakai trailing slash di `AUTH_URL`). **Web origins**: `https://rftdigitalsolution.com`. Jika sebelumnya hanya jalan seed default localhost, jalankan ulang seed dengan URL produksi, mis.: `APP_URL=https://rftdigitalsolution.com` (atau `AUTH_URL` / `NEXT_PUBLIC_APP_URL` yang sama dengan site Anda).
 - **Login redirects fail**: Verify redirect URIs in Keycloak client settings
 - **Roles not working**: Check user role assignments in Keycloak
 
