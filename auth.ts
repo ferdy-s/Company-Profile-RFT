@@ -1,6 +1,39 @@
 import NextAuth from 'next-auth';
+import { customFetch } from 'next-auth';
 import Keycloak from 'next-auth/providers/keycloak';
 import { env } from './lib/env';
+
+/**
+ * Alihkan fetch OIDC dari origin publik (KEYCLOAK_ISSUER) ke Keycloak di jaringan Docker,
+ * agar token / userinfo tidak lewat Cloudflare atau hairpin NAT.
+ */
+function keycloakInternalProxyFetch(
+  publicIssuer: string,
+  internalBaseUrl: string
+): typeof fetch {
+  const publicOrigin = new URL(publicIssuer).origin;
+  const internalOrigin = new URL(internalBaseUrl).origin;
+
+  return (input: RequestInfo | URL, init?: RequestInit) => {
+    const rewrite = (urlStr: string) =>
+      urlStr.startsWith(publicOrigin)
+        ? internalOrigin + urlStr.slice(publicOrigin.length)
+        : null;
+
+    if (typeof input === 'string') {
+      const next = rewrite(input);
+      return next ? fetch(next, init) : fetch(input, init);
+    }
+    if (input instanceof URL) {
+      const next = rewrite(input.href);
+      return next ? fetch(next, init) : fetch(input, init);
+    }
+    const next = rewrite(input.url);
+    return next
+      ? fetch(new Request(next, input), init)
+      : fetch(input, init);
+  };
+}
 
 /**
  * Decode JWT payload tanpa verifikasi signature (hanya untuk extract claims).
@@ -79,6 +112,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       issuer: env.KEYCLOAK_ISSUER,
       ...(env.KEYCLOAK_WELL_KNOWN
         ? { wellKnown: env.KEYCLOAK_WELL_KNOWN }
+        : {}),
+      ...(env.KEYCLOAK_INTERNAL_BASE_URL
+        ? {
+            [customFetch]: keycloakInternalProxyFetch(
+              env.KEYCLOAK_ISSUER,
+              env.KEYCLOAK_INTERNAL_BASE_URL
+            ),
+            // Beberapa proxy tidak menyukai Basic auth ke token endpoint; Keycloak menerima POST secret.
+            client: {
+              token_endpoint_auth_method: 'client_secret_post',
+            },
+          }
         : {}),
     }),
   ],

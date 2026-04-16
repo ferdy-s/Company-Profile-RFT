@@ -53,6 +53,16 @@ const envSchema = z
       if (typeof v === "string" && v.trim() === "") return undefined;
       return typeof v === "string" ? v.trim() : v;
     }, z.string().url().optional()),
+    /**
+     * Origin Keycloak di jaringan Docker (tanpa path), mis. http://keycloak:8080.
+     * Dipakai Auth.js customFetch untuk mengalihkan panggilan ke hostname publik KEYCLOAK_ISSUER
+     * ke internal — melewati Cloudflare / hairpin yang sering memutus token exchange.
+     */
+    KEYCLOAK_INTERNAL_BASE_URL: z.preprocess((v) => {
+      if (v == null || v === "") return undefined;
+      if (typeof v === "string" && v.trim() === "") return undefined;
+      return typeof v === "string" ? v.trim().replace(/\/+$/, "") : v;
+    }, z.string().url().optional()),
 
     // Redis/DragonflyDB Configuration
     REDIS_URL: z.string().url().optional(),
@@ -176,6 +186,7 @@ function getEnv(): Env {
       KEYCLOAK_CLIENT_SECRET: process.env.KEYCLOAK_CLIENT_SECRET,
       KEYCLOAK_ISSUER: normalizeKeycloakIssuer(process.env.KEYCLOAK_ISSUER),
       KEYCLOAK_WELL_KNOWN: process.env.KEYCLOAK_WELL_KNOWN,
+      KEYCLOAK_INTERNAL_BASE_URL: process.env.KEYCLOAK_INTERNAL_BASE_URL,
       S3_ENDPOINT: process.env.S3_ENDPOINT,
       S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
       S3_SECRET_KEY: process.env.S3_SECRET_KEY,

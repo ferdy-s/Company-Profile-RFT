@@ -142,6 +142,9 @@ Harus **200**. Kalau bukan 200, perbaiki proxy / DNS / TLS dulu — tanpa ini lo
   `docker exec native_rft_web node -e "fetch(process.env.KEYCLOAK_ISSUER+'/.well-known/openid-configuration').then(r=>console.log(r.status)).catch(e=>console.error(e))"`  
   Di `docker-compose.yml`, service **nextjs** memakai **`extra_hosts`** (`KEYCLOAK_PUBLIC_HOST:host-gateway`) agar hostname Keycloak publik bisa dijangkau dari container; setelah deploy compose terbaru: `docker compose up -d --force-recreate nextjs`.
 
+- **Cloudflare (orange cloud) di `keycloak.*`**  
+  Browser ke Keycloak boleh lewat Cloudflare, tetapi **permintaan dari container Next.js** ke `https://keycloak...` (discovery, **token exchange**, userinfo) bisa diblokir / dapat challenge HTML → `invalid_grant`, **502**, atau `Configuration`. Solusi: deploy kode terbaru dengan **`KEYCLOAK_INTERNAL_BASE_URL`** (default di `docker-compose`: `http://keycloak:8080`) — Auth.js mengalihkan fetch OIDC ke Keycloak **di jaringan Docker**, bukan lewat hostname publik. Alternatif operasional: set DNS **keycloak** ke **DNS only** (grey cloud) jika Anda menerima trade-off.
+
 - **502 Bad Gateway pada `https://…/api/auth/callback/keycloak`**  
   Biasanya **Nginx Proxy Manager** tidak mendapat respons dari upstream Next.js (bukan error Keycloak di browser). Cek:  
   1) **Proxy Host** `rftdigitalsolution.com` → Forward **HTTP** ke IP host + port publish Next (`8091`), bukan ke container IP sembarangan.  
