@@ -1,195 +1,183 @@
-# PT. Reliable Future Technology - Corporate Website
+<table align="center">
+  <tr>
+    <td align="center" valign="middle">
+      <img
+        width="55"
+        src="https://github.com/user-attachments/assets/1bb1aa9c-bb04-4fc1-8cbf-d8e9384b83b4"
+        alt="Next.js Logo"
+      />
+    </td>
+    <td valign="middle">
+      <h1>
+        PT. Reliable Future Technology - Website Company Profile
+      </h1>
+    </td>
+  </tr>
+</table>
 
-A high-performance, secure, and visually stunning corporate website built with Next.js, featuring a premium dark mode design inspired by modern technology agencies.
+Website company profile modern berbasis Next.js dengan performa tinggi, keamanan optimal, dan tampilan premium dark mode untuk kebutuhan corporate dan teknologi. 
 
-## 🚀 Technology Stack
+## Teknologi yang Digunakan
 
-- **Framework:** Next.js 16 (App Router) with React Server Components
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS v4 + shadcn/ui components
-- **State Management:** Zustand
-- **Validation:** Zod
-- **Animations:** Framer Motion
-- **Caching:** DragonflyDB (Redis-compatible, multi-threaded)
-- **Database:** PostgreSQL 15
-- **Authentication:** Keycloak (OIDC)
-- **Object Storage:** MinIO (S3-compatible)
-- **Containerization:** Docker (multi-stage build)
+* Framework: Next.js 16 (App Router)
+* Bahasa: TypeScript
+* Styling: Tailwind CSS v4 + shadcn/ui
+* State Management: Zustand
+* Validasi: Zod
+* Animasi: Framer Motion
+* Cache: DragonflyDB (Redis-compatible)
+* Database: PostgreSQL 15
+* Authentication: Keycloak (OIDC)
+* Object Storage: MinIO (S3-compatible)
+* Containerization: Docker
 
-## 📋 Prerequisites
 
-- Node.js 20 or higher
-- npm or yarn
-- Docker and Docker Compose (for containerized deployment)
-- DragonflyDB (runs in Docker, Redis-compatible)
+## Persiapan Awal
 
-## 🛠️ Setup Instructions
+Pastikan sudah terinstall:
 
-### 1. Install Dependencies
+* Node.js versi 20+
+* npm atau yarn
+* Docker & Docker Compose
+* PostgreSQL
+* DragonflyDB / Redis-compatible server
+
+
+# Instalasi Project
+
+## 1. Clone Repository
+
+```bash
+git clone https://github.com/ferdy-s/Company-Profile-RFT.git
+cd Company-Profile-RFT
+```
+
+---
+
+## 2. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Environment Variables
+---
 
-Create a `.env` file in the root directory with the following variables:
+## 3. Setup Environment
+
+Buat file `.env` pada root project:
 
 ```env
-# Node Environment
 NODE_ENV=development
 
-# Database Configuration
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/rft_blog
 
-# Authentication
-AUTH_SECRET=your-32-character-secret-here-minimum
+AUTH_SECRET=your-secret-key-minimum-32-character
+
 KEYCLOAK_CLIENT_ID=rft-web
-KEYCLOAK_CLIENT_SECRET=your-keycloak-client-secret
+KEYCLOAK_CLIENT_SECRET=your-keycloak-secret
 KEYCLOAK_ISSUER=http://localhost:8080/realms/rft
 
-# DragonflyDB Configuration (Redis-compatible)
-REDIS_URL=redis://:your-password@localhost:6379
-REDIS_PASSWORD=your-secure-redis-password-change-this
+REDIS_URL=redis://:password@localhost:6379
+REDIS_PASSWORD=your-redis-password
 
-# MinIO/S3 Configuration
 S3_ENDPOINT=http://localhost:9000
 S3_ACCESS_KEY=minioadmin
 S3_SECRET_KEY=minioadmin
 S3_BUCKET_NAME=blog-images
 S3_REGION=us-east-1
 
-# Next.js Public Configuration
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-**Important:** 
-- Set a strong `AUTH_SECRET` (minimum 32 characters)
-- Configure Keycloak first (see `SETUP_KEYCLOAK.md`)
-- Configure MinIO bucket (see `SETUP_MINIO.md`)
-- Set strong passwords for production
+---
 
-### 3. Development Server
+## 4. Menjalankan Development Server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the website.
+Buka browser:
 
-### 4. Production Build
+```txt
+http://localhost:3000
+```
+
+---
+
+# Build Production
 
 ```bash
 npm run build
-npm start
+npm run start
 ```
 
-## 🐳 Docker Deployment
+---
 
-### Using Docker Compose (Recommended)
+# Deployment Docker
 
-This will start both the Next.js application and DragonflyDB:
+## Menjalankan Docker Compose
 
 ```bash
 docker-compose up -d
 ```
 
-The application will be available at [http://localhost:3000](http://localhost:3000).
-
-To stop the containers:
+Stop container:
 
 ```bash
 docker-compose down
 ```
 
-### Using Docker Only
+---
 
-Build the image:
+# Struktur Project
+
+```txt
+app/
+components/
+lib/
+store/
+Dockerfile
+docker-compose.yml
+next.config.ts
+```
+
+---
+
+# Fitur Utama
+
+* App Router Next.js terbaru
+* Dark Mode Premium UI
+* Responsive Design
+* Security Headers
+* Redis-Compatible Caching
+* Authentication Keycloak
+* Docker Ready
+* SEO Friendly
+* Optimized Performance
+
+---
+
+# Script Penting
 
 ```bash
-docker build -t rft-website .
+npm run dev
+npm run build
+npm run start
+npm run lint
 ```
 
-Run the container (requires DragonflyDB to be running separately):
+---
 
-```bash
-docker run -p 3000:3000 \
-  -e REDIS_URL=redis://:your-password@your-dragonfly-host:6379 \
-  -e REDIS_PASSWORD=your-dragonfly-password \
-  rft-website
-```
+# Catatan
 
-## 📁 Project Structure
+* Menggunakan React Server Components
+* Client Components menggunakan `"use client"`
+* Zustand digunakan untuk state management frontend
+* Framer Motion digunakan untuk animasi modern
 
-```
-├── app/                    # Next.js App Router pages
-│   ├── layout.tsx          # Root layout with navbar and footer
-│   ├── page.tsx            # Homepage
-│   └── globals.css         # Global styles and theme
-├── components/             # React components
-│   ├── ui/                # shadcn/ui components
-│   ├── navbar.tsx         # Navigation bar
-│   ├── footer.tsx         # Footer component
-│   ├── hero-section.tsx   # Homepage hero section
-│   ├── services-section.tsx # Services grid
-│   └── trusted-by-section.tsx # Client marquee
-├── lib/                   # Utility libraries
-│   ├── env.ts            # Environment variable validation (Zod)
-│   ├── redis.ts          # DragonflyDB/Redis client initialization
-│   └── utils.ts          # Utility functions
-├── store/                 # Zustand stores
-│   └── useUIStore.ts     # UI state management
-├── Dockerfile            # Multi-stage Docker build
-├── docker-compose.yml    # Docker Compose configuration
-└── next.config.ts        # Next.js configuration with security headers
-```
+---
 
-## 🔒 Security Features
+# License
 
-- **Security Headers:** Implemented in `next.config.ts` (CSP, HSTS, X-Frame-Options, etc.)
-- **Non-root Docker User:** Container runs as non-root user for enhanced security
-- **Input Validation:** Zod schemas for environment variables and form validation
-- **Secure Cookies:** Configured for production use
-
-## 🎨 Design System
-
-The website features a premium dark mode design with:
-
-- **Typography:** Inter font family for modern, clean aesthetics
-- **Color Palette:** Dark theme with subtle gradients and accent colors
-- **Animations:** Smooth scroll reveals and hover effects using Framer Motion
-- **Layout:** Generous whitespace and clean grid layouts
-
-## 📝 Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-
-## 🔧 Configuration
-
-### DragonflyDB Connection
-
-The application uses DragonflyDB (Redis-compatible, multi-threaded) for caching. Configure the connection via environment variables:
-
-- `REDIS_URL`: Full connection URL with password (e.g., `redis://:password@localhost:6379`)
-- `REDIS_HOST` & `REDIS_PORT`: Alternative to REDIS_URL
-- `REDIS_PASSWORD`: Required password for DragonflyDB authentication
-
-**Note:** Variable names use "REDIS" prefix for compatibility, but the application uses DragonflyDB which is fully Redis-compatible. All Redis commands work seamlessly with DragonflyDB.
-
-### Next.js Configuration
-
-Security headers and standalone output are configured in `next.config.ts`. The standalone output is required for Docker deployment.
-
-## 🚧 Development Notes
-
-- The application uses React Server Components by default
-- Client components are marked with `'use client'` directive
-- Zustand is used for client-side UI state (e.g., mobile menu)
-- Framer Motion is used for animations and scroll reveals
-
-## 📄 License
-
-Copyright © 2024 PT. Reliable Future Technology. All rights reserved.
+Copyright © PT. Reliable Future Technology. All rights reserved.
